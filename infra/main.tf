@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "app_bucket" {
-  bucket = "devops-kickstart-app-bucket-11092001"
+  bucket = "shivaparvarilaxmiganpati"
 
   tags = {
     Name        = "devops-kickstart-app-bucket"
