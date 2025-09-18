@@ -11,10 +11,10 @@ data "aws_subnets" "default" {
   }
 }
 
-# SSH Key Pair
+# SSH Key Pair (public key only)
 resource "aws_key_pair" "devops_key" {
   key_name   = "devops-key"
-  public_key = file("${path.module}/id_rsa.pub")
+  public_key = file("${path.module}/id_rsa.pub") # safe to keep in repo
 }
 
 # Security Group
@@ -55,27 +55,27 @@ resource "aws_instance" "devops_ec2" {
   subnet_id              = tolist(data.aws_subnets.default.ids)[0]
   vpc_security_group_ids = [aws_security_group.devops_sg.id]
 
-  user_data = <<-EOF
-              #!/bin/bash
-              set -e
+  provisioner "remote-exec" {
+    inline = [
+      "sudo apt-get update -y",
+      "sudo apt-get install -y docker.io",
+      "sudo systemctl enable docker",
+      "sudo systemctl start docker",
+      "sudo usermod -aG docker ubuntu",
+      "echo '${var.GHCR_PAT}' | sudo docker login ghcr.io -u laxmikantat --password-stdin",
+      "sudo docker pull ghcr.io/laxmikantat/devops-kickstart:latest",
+      "sudo docker stop devops || true",
+      "sudo docker rm devops || true",
+      "sudo docker run -d --name devops --restart always -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest"
+    ]
 
-              # Update and install Docker
-              apt-get update -y
-              apt-get install -y docker.io
-
-              # Enable and start Docker
-              systemctl enable docker
-              systemctl start docker
-
-              # Add ubuntu user to docker group
-              usermod -aG docker ubuntu
-
-              # Login to GHCR (GitHub Container Registry)
-              echo "${var.GHCR_PAT}" | docker login ghcr.io -u laxmikantat --password-stdin
-
-              # Pull and run container with restart policy
-              docker run -d --restart always -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest
-              EOF
+    connection {
+      type        = "ssh"
+      host        = self.public_ip
+      user        = "ubuntu"
+      private_key = var.EC2_SSH_KEY
+    }
+  }
 
   tags = {
     Name = "DevOps-Kickstart-EC2"
