@@ -73,7 +73,7 @@ resource "aws_instance" "devops_ec2" {
       type        = "ssh"
       host        = self.public_ip
       user        = "ubuntu"
-      private_key = var.EC2_SSH_KEY
+      private_key = var.ec2_ssh_key
     }
   }
 

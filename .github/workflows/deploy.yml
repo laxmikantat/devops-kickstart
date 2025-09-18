@@ -29,9 +29,9 @@ jobs:
 
       - name: Terraform Plan
         working-directory: infra
-        run: terraform plan -var="GHCR_PAT=${{ secrets.GHCR_PAT }}"
+        run: terraform plan -var="GHCR_PAT=${{ secrets.GHCR_PAT }}" -var="ec2_ssh_key=${{ secrets.EC2_SSH_KEY }}"
 
       - name: Terraform Apply
         working-directory: infra
-        run: terraform apply -auto-approve -var="GHCR_PAT=${{ secrets.GHCR_PAT }}"
+        run: terraform apply -auto-approve -var="GHCR_PAT=${{ secrets.GHCR_PAT }}"  -var="ec2_ssh_key=${{ secrets.EC2_SSH_KEY }}"
 
