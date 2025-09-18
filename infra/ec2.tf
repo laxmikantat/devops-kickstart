@@ -71,7 +71,7 @@ resource "aws_instance" "devops_ec2" {
               usermod -aG docker ubuntu
 
               # Login to GHCR (GitHub Container Registry)
-              echo "${var.ghcr_pat}" | docker login ghcr.io -u laxmikantat --password-stdin
+              echo "${var.GHCR_PAT}" | docker login ghcr.io -u laxmikantat --password-stdin
 
               # Pull and run container with restart policy
               docker run -d --restart always -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest
