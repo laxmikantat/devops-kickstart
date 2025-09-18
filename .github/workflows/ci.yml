@@ -6,8 +6,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository }}:latest
-
+  IMAGE_NAME: ghcr.io/laxmikantat/devops-kickstart:latest
 jobs:
   build-test:
     runs-on: ubuntu-latest
