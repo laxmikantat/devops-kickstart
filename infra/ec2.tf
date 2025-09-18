@@ -14,7 +14,7 @@ data "aws_subnets" "default" {
 # SSH Key Pair
 resource "aws_key_pair" "devops_key" {
   key_name   = "devops-key"
-  public_key = file("C:/Users/laxmi/.ssh/id_rsa.pub")
+  public_key = file("${path.module}/id_rsa.pub")
 }
 
 # Security Group
