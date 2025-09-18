@@ -3,19 +3,22 @@ name: Deploy to EC2 with Terraform
 on:
   push:
     branches:
-      - main   # only main branch triggers deployment
+      - main
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      # 3️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -23,15 +26,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 4️⃣ Terraform Init
       - name: Terraform Init
         working-directory: infra
         run: terraform init
 
+      # 5️⃣ Terraform Plan
       - name: Terraform Plan
         working-directory: infra
-        run: terraform plan -var="GHCR_PAT=${{ secrets.GHCR_PAT }}" -var="ec2_ssh_key=${{ secrets.EC2_SSH_KEY }}"
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        run: |
+          terraform plan \
+            -var="ec2_ssh_key=${EC2_SSH_KEY}" \
+            -var="GHCR_PAT=${GHCR_PAT}"
 
+      # 6️⃣ Terraform Apply
       - name: Terraform Apply
         working-directory: infra
-        run: terraform apply -auto-approve -var="GHCR_PAT=${{ secrets.GHCR_PAT }}"  -var="ec2_ssh_key=${{ secrets.EC2_SSH_KEY }}"
-
+        env:
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        run: |
+          terraform apply -auto-approve \
+            -var="ec2_ssh_key=${EC2_SSH_KEY}" \
+            -var="GHCR_PAT=${GHCR_PAT}"
