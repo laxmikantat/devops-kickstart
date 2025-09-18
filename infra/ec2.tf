@@ -73,8 +73,8 @@ resource "aws_instance" "devops_ec2" {
               # Login to GHCR (GitHub Container Registry)
               echo "${var.ghcr_pat}" | docker login ghcr.io -u laxmikantat --password-stdin
 
-              # Pull and run container
-              docker run -d -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest
+              # Pull and run container with restart policy
+              docker run -d --restart always -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest
               EOF
 
   tags = {
