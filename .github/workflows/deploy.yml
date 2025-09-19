@@ -40,7 +40,7 @@ jobs:
         run: |
           terraform plan \
             -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-            -var="GHCR_PAT=${GHCR_PAT}"
+            -var="ghcr_pat=${GHCR_PAT}"
 
       # 6️⃣ Terraform Apply
       - name: Terraform Apply
@@ -51,4 +51,4 @@ jobs:
         run: |
           terraform apply -auto-approve \
             -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-            -var="GHCR_PAT=${GHCR_PAT}"
+            -var="ghcr_pat=${GHCR_PAT}"
