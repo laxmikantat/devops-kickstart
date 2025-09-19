@@ -55,38 +55,24 @@ resource "aws_instance" "devops_ec2" {
   subnet_id              = tolist(data.aws_subnets.default.ids)[0]
   vpc_security_group_ids = [aws_security_group.devops_sg.id]
 
-  provisioner "remote-exec" {
+provisioner "remote-exec" {
   inline = [
-    # Update & install Docker
     "sudo apt-get update -y",
     "sudo apt-get install -y docker.io",
-    
-    # Enable and start Docker
     "sudo systemctl enable docker",
     "sudo systemctl start docker",
-    
-    # Wait to ensure Docker is ready
-    "sleep 10",
-    
-    # Optional: check Docker status
     "sudo systemctl status docker || true",
-    
-    # Login to GitHub Container Registry (GHCR)
-    "echo '${var.GHCR_PAT}' | sudo docker login ghcr.io -u laxmikantat --password-stdin",
-    
+    # Add ubuntu to docker group (effective after next login, not needed for provisioning)
+    "sudo usermod -aG docker ubuntu",
+    # Login to GitHub Container Registry
+    "echo '${var.ghcr_pat}' | sudo docker login ghcr.io -u laxmikantat --password-stdin",
     # Pull latest image
     "sudo docker pull ghcr.io/laxmikantat/devops-kickstart:latest",
-    
-    # Stop and remove existing container if it exists
+    # Stop and remove existing container
     "sudo docker stop devops || true",
     "sudo docker rm devops || true",
-    
-    # Run container in detached mode with restart policy
+    # Run container
     "sudo docker run -d --name devops --restart always -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest",
-    
-    # Wait a few seconds to let container start
-    "sleep 5",
-    
     # Optional: verify container is running
     "sudo docker ps"
   ]
@@ -98,6 +84,7 @@ resource "aws_instance" "devops_ec2" {
     private_key = var.ec2_ssh_key
   }
 }
+
 
   tags = {
     Name = "DevOps-Kickstart-EC2"
