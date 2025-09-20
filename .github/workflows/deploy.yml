@@ -6,19 +6,18 @@ on:
       - main
 
 jobs:
-  terraform:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
+      # Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Terraform
+      # Setup Terraform & deploy infra
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      # 3️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -26,41 +25,41 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 4️⃣ Terraform Init
       - name: Terraform Init
         working-directory: infra
         run: terraform init
 
-      # 5️⃣ Terraform Plan
-      - name: Terraform Plan
-        working-directory: infra
-        env:
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          GHCR_PAT: ${{ secrets.GHCR_PAT }}
-          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        run: |
-          terraform plan \
-            -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-            -var="ghcr_pat=${GHCR_PAT}" \
-            -var="s3_bucket_name=${S3_BUCKET_NAME}"
-
-      # 6️⃣ Terraform Apply
       - name: Terraform Apply
         working-directory: infra
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        run: |
-          terraform apply -auto-approve \
-            -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-            -var="ghcr_pat=${GHCR_PAT}" \
-            -var="s3_bucket_name=${S3_BUCKET_NAME}"
+        run: terraform apply -auto-approve \
+          -var="ec2_ssh_key=${EC2_SSH_KEY}" \
+          -var="ghcr_pat=${GHCR_PAT}" \
+          -var="s3_bucket_name=${S3_BUCKET_NAME}"
 
-      # 7️⃣ Verify Deployment (optional)
-      - name: Verify EC2 and S3
+      # Install Ansible
+      - name: Install Ansible
+        run: sudo apt-get update && sudo apt-get install -y ansible python3-pip
+
+      # Run Ansible Playbook
+      - name: Run Ansible Playbook
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
         run: |
-          echo "Checking S3 bucket exists..."
-          aws s3 ls s3://${{ secrets.S3_BUCKET_NAME }}
-          echo "EC2 instance created:"
-          aws ec2 describe-instances --filters "Name=tag:Name,Values=DevOps-Kickstart-EC2" --query "Reservations[].Instances[].PublicIpAddress" --output table
+          # Get EC2 IP from Terraform output
+          EC2_IP=$(terraform -chdir=infra output -raw ec2_public_ip)
+
+          # Write inventory file
+          echo "[ec2]" > inventory.ini
+          echo "$EC2_IP ansible_user=ubuntu ansible_ssh_private_key_file=./ec2_key.pem" >> inventory.ini
+
+          # Save private key from secret
+          echo "${{ secrets.EC2_PRIVATE_KEY }}" > ec2_key.pem
+          chmod 600 ec2_key.pem
+
+          # Run playbook
+          ansible-playbook -i inventory.ini ansible/playbook.yml
