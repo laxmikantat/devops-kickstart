@@ -59,27 +59,22 @@ provisioner "remote-exec" {
   inline = [
     "sudo apt-get update -y",
     "sudo apt-get install -y docker.io",
-    "sudo systemctl enable docker",
-    "sudo systemctl start docker",
-
-    # Add ubuntu to docker group (for future SSH logins)
     "sudo usermod -aG docker ubuntu",
-
-    # Use sudo for docker commands now
-    "echo '${var.ghcr_pat}' | sudo docker login ghcr.io -u laxmikantat --password-stdin",
-    "sudo docker pull ghcr.io/laxmikantat/devops-kickstart:latest",
-    "sudo docker stop devops || true",
-    "sudo docker rm devops || true",
-    "sudo docker run -d --name devops --restart always -p 80:5000 ghcr.io/laxmikantat/devops-kickstart:latest"
+    "newgrp docker <<EOF",
+    "docker login ghcr.io -u USERNAME -p ${var.ghcr_pat}",
+    "docker pull ghcr.io/USERNAME/your-image:latest",
+    "docker run -d -p 80:80 ghcr.io/USERNAME/your-image:latest",
+    "EOF"
   ]
 
   connection {
     type        = "ssh"
-    host        = self.public_ip
     user        = "ubuntu"
     private_key = var.ec2_ssh_key
+    host        = self.public_ip
   }
 }
+
 
 
   tags = {
