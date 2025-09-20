@@ -1,4 +1,4 @@
-name: Deploy to EC2 with Terraform
+name: Deploy to AWS EC2 and S3 with Terraform
 
 on:
   push:
@@ -37,10 +37,12 @@ jobs:
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           terraform plan \
             -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-            -var="ghcr_pat=${GHCR_PAT}"
+            -var="ghcr_pat=${GHCR_PAT}" \
+            -var="s3_bucket_name=${S3_BUCKET_NAME}"
 
       # 6️⃣ Terraform Apply
       - name: Terraform Apply
@@ -48,7 +50,17 @@ jobs:
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           terraform apply -auto-approve \
             -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-            -var="ghcr_pat=${GHCR_PAT}"
+            -var="ghcr_pat=${GHCR_PAT}" \
+            -var="s3_bucket_name=${S3_BUCKET_NAME}"
+
+      # 7️⃣ Verify Deployment (optional)
+      - name: Verify EC2 and S3
+        run: |
+          echo "Checking S3 bucket exists..."
+          aws s3 ls s3://${{ secrets.S3_BUCKET_NAME }}
+          echo "EC2 instance created:"
+          aws ec2 describe-instances --filters "Name=tag:Name,Values=DevOps-Kickstart-EC2" --query "Reservations[].Instances[].PublicIpAddress" --output table

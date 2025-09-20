@@ -1,0 +1,55 @@
+- hosts: all
+  become: true
+  vars:
+    ghcr_pat: "{{ lookup('env', 'GHCR_PAT') }}"   # Or pass as extra-vars
+  tasks:
+    - name: Update apt cache and install prerequisites
+      apt:
+        name:
+          - docker.io
+          - python3-pip
+        state: present
+        update_cache: yes
+
+    - name: Ensure Docker service is started
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Install Docker Python module
+      pip:
+        name: docker
+        executable: pip3
+
+    - name: Add ubuntu to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Login to GitHub Container Registry
+      community.docker.docker_login:
+        registry_url: ghcr.io
+        username: laxmikantat
+        password: "{{ ghcr_pat }}"
+
+    - name: Pull latest container image
+      community.docker.docker_image:
+        name: ghcr.io/laxmikantat/devops-kickstart
+        tag: latest
+        source: pull
+
+    - name: Stop existing container if running
+      community.docker.docker_container:
+        name: devops
+        state: absent
+
+    - name: Run container
+      community.docker.docker_container:
+        name: devops
+        image: ghcr.io/laxmikantat/devops-kickstart:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:8080"
