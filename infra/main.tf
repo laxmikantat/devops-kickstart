@@ -1,14 +1,19 @@
-variable "s3_bucket_name" {
-  description = "Name of the S3 bucket"
-  type        = string
+# Generate a random suffix for uniqueness
+resource "random_id" "suffix" {
+  byte_length = 4
 }
 
+# Create S3 bucket
 resource "aws_s3_bucket" "app_bucket" {
-  bucket = var.s3_bucket_name
-
+  bucket = "devops-kickstart-bucket-${random_id.suffix.hex}"
 
   tags = {
-    Name        = var.s3_bucket_name
-    Environment = "DevOps-Kickstart"
+    Name        = "DevOps-Kickstart-Bucket"
+    Environment = "Dev"
   }
+}
+
+# Optional: Output the bucket name
+output "s3_bucket_name" {
+  value = aws_s3_bucket.app_bucket.bucket
 }
