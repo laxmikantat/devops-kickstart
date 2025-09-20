@@ -1,4 +1,5 @@
-- hosts: all
+- hosts: localhost
+  connection: local
   become: true
   vars:
     ghcr_pat: "{{ lookup('env', 'GHCR_PAT') }}"   # Or pass as extra-vars
