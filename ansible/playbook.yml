@@ -1,8 +1,7 @@
-- hosts: localhost
-  connection: local
+- hosts: ec2
   become: true
   vars:
-    ghcr_pat: "{{ lookup('env', 'GHCR_TOKEN') }}"   # Uses your actual GitHub secret
+    ghcr_pat: "{{ lookup('env', 'GHCR_TOKEN') }}"   # Uses your GitHub secret
 
   tasks:
     - name: Install Docker dependencies

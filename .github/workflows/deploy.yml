@@ -31,7 +31,7 @@ jobs:
         working-directory: infra
         run: terraform init
 
-      # 5️⃣ Terraform Apply with GHCR_TOKEN
+      # 5️⃣ Terraform Apply
       - name: Terraform Apply
         working-directory: infra
         env:
@@ -44,18 +44,25 @@ jobs:
             -var="ghcr_pat=${GHCR_TOKEN}" \
             -var="s3_bucket_name=${S3_BUCKET_NAME}"
 
-      # 6️⃣ Install Ansible & Docker Python module
-      - name: Install Ansible and Docker Python module
+      # 6️⃣ Setup EC2 SSH key for Ansible
+      - name: Setup EC2 SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      # 7️⃣ Install Ansible & Docker Python module
+      - name: Install Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible python3-pip
           pip3 install docker
 
-      # 7️⃣ Run Ansible Playbook
-      - name: Run Ansible Playbook
+      # 8️⃣ Run Ansible Playbook on EC2
+      - name: Run Ansible Playbook on EC2
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           ansible-galaxy collection install community.docker
-          # Optional: skip login if you prefer manual login
-          ansible-playbook ansible/playbook.yml -i localhost, -c local
+          # Use your EC2 inventory instead of localhost
+          ansible-playbook -i hosts.ini ansible/playbook.yml
