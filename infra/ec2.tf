@@ -11,10 +11,10 @@ data "aws_subnets" "default" {
   }
 }
 
-# SSH Key Pair (public key only)
+# SSH Key Pair
 resource "aws_key_pair" "devops_key" {
   key_name   = "devops-key"
-  public_key = file("${path.module}/id_rsa.pub") # safe to keep in repo
+  public_key = file("${path.module}/id_rsa.pub")
 }
 
 # Security Group
@@ -47,7 +47,7 @@ resource "aws_security_group" "devops_sg" {
   }
 }
 
-# EC2 Instance (Ubuntu)
+# EC2 Instance (Ubuntu with Docker + GHCR login + Container Run)
 resource "aws_instance" "devops_ec2" {
   ami                    = "ami-04a81a99f5ec58529" # Ubuntu 20.04 LTS (us-east-1)
   instance_type          = "t2.micro"
@@ -61,20 +61,16 @@ provisioner "remote-exec" {
     "sudo apt-get install -y docker.io",
     "sudo systemctl enable docker",
     "sudo systemctl start docker",
-    "sudo systemctl status docker || true",
-    # Add ubuntu to docker group (effective after next login, not needed for provisioning)
+
+    # Add ubuntu to docker group (for future SSH logins)
     "sudo usermod -aG docker ubuntu",
-    # Login to GitHub Container Registry
+
+    # Use sudo for docker commands now
     "echo '${var.ghcr_pat}' | sudo docker login ghcr.io -u laxmikantat --password-stdin",
-    # Pull latest image
     "sudo docker pull ghcr.io/laxmikantat/devops-kickstart:latest",
-    # Stop and remove existing container
     "sudo docker stop devops || true",
     "sudo docker rm devops || true",
-    # Run container
-    "sudo docker run -d --name devops --restart always -p 80:8080 ghcr.io/laxmikantat/devops-kickstart:latest",
-    # Optional: verify container is running
-    "sudo docker ps"
+    "sudo docker run -d --name devops --restart always -p 80:5000 ghcr.io/laxmikantat/devops-kickstart:latest"
   ]
 
   connection {
