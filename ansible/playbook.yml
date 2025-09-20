@@ -32,7 +32,7 @@
       community.docker.docker_login:
         registry_url: ghcr.io
         username: laxmikantat
-        password: "{{ ghcr_pat }}"
+        password: "{{ GHCR_PAT }}"
 
     - name: Pull latest container image
       community.docker.docker_image:
