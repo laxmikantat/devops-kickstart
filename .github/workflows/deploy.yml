@@ -35,10 +35,11 @@ jobs:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
-        run: terraform apply -auto-approve \
-          -var="ec2_ssh_key=${EC2_SSH_KEY}" \
-          -var="ghcr_pat=${GHCR_PAT}" \
-          -var="s3_bucket_name=${S3_BUCKET_NAME}"
+        run: |
+          terraform apply -auto-approve \
+            -var="ec2_ssh_key=${EC2_SSH_KEY}" \
+            -var="ghcr_pat=${GHCR_PAT}" \
+            -var="s3_bucket_name=${S3_BUCKET_NAME}"
 
       # Install Ansible
       - name: Install Ansible
