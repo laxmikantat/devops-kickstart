@@ -1,4 +1,4 @@
-name: Deploy to AWS EC2 and S3 with Terraform
+name: Deploy to AWS EC2 with Terraform and Ansible
 
 on:
   push:
@@ -44,25 +44,37 @@ jobs:
             -var="ghcr_pat=${GHCR_TOKEN}" \
             -var="s3_bucket_name=${S3_BUCKET_NAME}"
 
-      # 6️⃣ Setup EC2 SSH key for Ansible
-      - name: Setup EC2 SSH Key
+      # 6️⃣ Get EC2 public IP from Terraform output
+      - name: Get EC2 public IP
+        id: ec2_ip
+        working-directory: infra
+        run: echo "EC2_IP=$(terraform output -raw ec2_public_ip)" >> $GITHUB_ENV
+
+      # 7️⃣ Setup EC2 SSH key for Ansible
+      - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      # 7️⃣ Install Ansible & Docker Python module
+      # 8️⃣ Install Ansible & Docker Python module
       - name: Install Ansible
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible python3-pip
           pip3 install docker
 
-      # 8️⃣ Run Ansible Playbook on EC2
-      - name: Run Ansible Playbook on EC2
+      # 9️⃣ Create dynamic Ansible inventory
+      - name: Create dynamic inventory
+        run: |
+          mkdir -p ansible
+          echo "[ec2]" > ansible/hosts.ini
+          echo "ec2-instance ansible_host=${EC2_IP} ansible_user=ubuntu ansible_private_key_file=~/.ssh/id_rsa" >> ansible/hosts.ini
+
+      # 🔟 Run Ansible Playbook
+      - name: Run Ansible Playbook
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           ansible-galaxy collection install community.docker
-          # Use your EC2 inventory instead of localhost
-          ansible-playbook -i hosts.ini ansible/playbook.yml
+          ansible-playbook -i ansible/hosts.ini ansible/playbook.yml
