@@ -62,7 +62,7 @@ provisioner "remote-exec" {
     "sudo usermod -aG docker ubuntu",
     "newgrp docker <<EOF",
     "docker login ghcr.io -u laxmikantat -p ${var.ghcr_pat}",
-    "docker pull ghcr.io/laxmikantat/your-image:latest",
+    "docker pull ghcr.io/laxmikantat/devops-kickstart:latest",
     "docker run -d -p 80:80 ghcr.io/laxmikantat/devops-kickstart:latest",
     "EOF"
   ]
