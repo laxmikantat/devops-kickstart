@@ -10,14 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Terraform & deploy infra
+      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      # 3️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -25,15 +26,17 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 4️⃣ Terraform Init
       - name: Terraform Init
         working-directory: infra
         run: terraform init
 
+      # 5️⃣ Terraform Apply with GHCR_TOKEN
       - name: Terraform Apply
         working-directory: infra
         env:
           EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          GHCR_PAT: ${{ secrets.GHCR_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           S3_BUCKET_NAME: ${{ secrets.S3_BUCKET_NAME }}
         run: |
           terraform apply -auto-approve \
@@ -41,17 +44,18 @@ jobs:
             -var="ghcr_pat=${GHCR_TOKEN}" \
             -var="s3_bucket_name=${S3_BUCKET_NAME}"
 
-      # 3️⃣ Install Ansible & Docker Python module
-      - name: Install Ansible
+      # 6️⃣ Install Ansible & Docker Python module
+      - name: Install Ansible and Docker Python module
         run: |
           sudo apt-get update
           sudo apt-get install -y ansible python3-pip
           pip3 install docker
 
-      # 4️⃣ Run Ansible Playbook locally
-      - name: Run Ansible Playbook Locally
+      # 7️⃣ Run Ansible Playbook
+      - name: Run Ansible Playbook
         env:
-          GHCR_PAT: ${{ secrets.GHCR_TOKEN }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
         run: |
           ansible-galaxy collection install community.docker
+          # Optional: skip login if you prefer manual login
           ansible-playbook ansible/playbook.yml -i localhost, -c local

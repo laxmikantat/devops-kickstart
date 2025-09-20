@@ -2,20 +2,42 @@
   connection: local
   become: true
   vars:
-    ghcr_pat: "{{ lookup('env', 'GHCR_TOKEN') }}"   # Or pass as extra-vars
+    ghcr_pat: "{{ lookup('env', 'GHCR_TOKEN') }}"   # Uses your actual GitHub secret
+
   tasks:
-    - name: Install Docker via official Docker repository
+    - name: Install Docker dependencies
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: yes
+
+    - name: Add Docker GPG key
       ansible.builtin.shell: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          ca-certificates curl gnupg lsb-release
         sudo mkdir -p /etc/apt/keyrings
         curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
       args:
         executable: /bin/bash
+
+    - name: Add Docker repository
+      ansible.builtin.shell: |
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+      args:
+        executable: /bin/bash
+
+    - name: Install Docker and plugins
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: yes
 
     - name: Ensure Docker service is started
       ansible.builtin.systemd:
