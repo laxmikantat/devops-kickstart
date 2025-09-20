@@ -2,7 +2,7 @@
   connection: local
   become: true
   vars:
-    ghcr_pat: "{{ lookup('env', 'GHCR_PAT') }}"   # Or pass as extra-vars
+    ghcr_pat: "{{ lookup('env', 'GHCR_TOKEN') }}"   # Or pass as extra-vars
   tasks:
     - name: Install Docker via official Docker repository
       ansible.builtin.shell: |
